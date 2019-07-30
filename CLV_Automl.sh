@@ -55,6 +55,7 @@ main() {
   local BUCKET=gs://${PROJECT}_data_final
   local REGION=europe-west1
   local DATASET_NAME=ltv
+  local TABLE_NAME=data_source
 
   local COMPOSER_NAME="clv-final"
   local COMPOSER_BUCKET_NAME=${PROJECT}_composer_final
@@ -64,11 +65,6 @@ main() {
   local SQL_MP_LOCATION="sql"
 
   local LOCAL_FOLDER=$(pwd)
-
-  #Setup Data in BigQuery
-  gsutil mb -l ${REGION} -p ${PROJECT} ${BUCKET}
-  gsutil mb -l ${REGION} -p ${PROJECT} ${COMPOSER_BUCKET}
-  bq --location=EU mk --dataset ${PROJECT}:${DATASET_NAME}
 
   # Copy the raw dataset
   gsutil cp gs://solutions-public-assets/ml-clv/db_dump.csv ${BUCKET}
@@ -130,6 +126,19 @@ main() {
   export GOOGLE_APPLICATION_CREDENTIALS=${KEY_FILE}
   echo ${GOOGLE_APPLICATION_CREDENTIALS}
   echo GOOGLE_APPLICATION_CREDENTIAL=${GOOGLE_APPLICATION_CREDENTIALS} 
+
+  #Setup & load Data in BigQuery
+  gsutil mb -l ${REGION} -p ${PROJECT} ${BUCKET}
+  gsutil mb -l ${REGION} -p ${PROJECT} ${COMPOSER_BUCKET}
+  bq --location=EU rm -rf --dataset ${PROJECT}:${DATASET_NAME}
+  bq --location=EU mk --dataset ${PROJECT}:${DATASET_NAME}
+  bq mk -t --schema data_source.json ${PROJECT}:${DATASET_NAME}
+  bq --location=EU load --source_format=CSV ${PROJECT}:${DATASET_NAME}.$TABLE_NAME} ${BUCKET}/db_dump.csv
+
+  #train using AutoML
+  cd ${LOCAL_FOLDER}/clv_automl
+  cat clv_automl.py | sed -e 's/us-central1/europe-west1/g' > clv_automl.py
+  python clv_automl.py --project_id ${PROJECT}
 }
 
 main
