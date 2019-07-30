@@ -69,6 +69,7 @@ main() {
   local LOCAL_FOLDER=$(pwd)
 
   # Copy the raw dataset
+  gsutil rm -f gs://${BUCKET}
   gsutil cp gs://solutions-public-assets/ml-clv/db_dump.csv ${BUCKET}
   gsutil cp ${BUCKET}/db_dump.csv ${COMPOSER_BUCKET}
 
@@ -134,8 +135,8 @@ main() {
   gsutil mb -l ${REGION} -p ${PROJECT} ${COMPOSER_BUCKET}
   bq --location=EU rm -rf --dataset ${PROJECT}:${DATASET_NAME}
   bq --location=EU mk --dataset ${PROJECT}:${DATASET_NAME}
-  bq mk -t --schema data_source.json ${PROJECT}:${DATASET_NAME}
-  bq --location=EU load --source_format=CSV ${PROJECT}:${DATASET_NAME}.$TABLE_NAME} ${BUCKET}/db_dump.csv
+  bq mk -t --schema data_source.json ${PROJECT}:${DATASET_NAME}.${TABLE_NAME}
+  bq --location=EU load --source_format=CSV ${PROJECT}:${DATASET_NAME}.${TABLE_NAME} ${BUCKET}/db_dump.csv
 
   #train using AutoML
   cd ${LOCAL_FOLDER}/clv_automl
