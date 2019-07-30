@@ -53,8 +53,6 @@ main() {
   cd tensorflow-lifetime-value
 
   # Create the Dev Environment
-  conda env list 
-  conda env list | grep clv | wc -l
   EXISTS=$(conda env list | grep clv | wc -l)
   if [ $EXISTS -eq 0 ]
   then
@@ -82,6 +80,8 @@ main() {
   # Copy the raw dataset
   gsutil rm -rf ${BUCKET}
   gsutil rm -rf ${COMPOSER_BUCKET}
+  gsutil mk ${BUCKET}
+  gsutil mk ${COMPOSER_BUCKET}
   gsutil cp gs://solutions-public-assets/ml-clv/db_dump.csv ${BUCKET}
   gsutil cp ${BUCKET}/db_dump.csv ${COMPOSER_BUCKET}
 
