@@ -31,6 +31,8 @@ main() {
   local KEY_FILE=$SERVICE_ACC.json
   local ROLES=roles/viewer
 
+  rm Minic*
+
   #Enable required GCP apis
   enableAPIs $APIS
   printf "******\n\n"
