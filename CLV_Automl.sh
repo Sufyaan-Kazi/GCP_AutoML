@@ -80,8 +80,8 @@ main() {
   local LOCAL_FOLDER=$(pwd)
 
   # Copy the raw dataset
-  gsutil rm -f gs://${BUCKET}
-  gsutil rm -f gs://${COMPOSER_BUCKET}
+  gsutil rm -f ${BUCKET}
+  gsutil rm -f ${COMPOSER_BUCKET}
   gsutil cp gs://solutions-public-assets/ml-clv/db_dump.csv ${BUCKET}
   gsutil cp ${BUCKET}/db_dump.csv ${COMPOSER_BUCKET}
 
@@ -95,12 +95,12 @@ main() {
   gcloud iam service-accounts create $SVC_ACC_NAME --display-name $SVC_ACC_NAME --project ${PROJECT}
 
   echo "*** Adding Role Policy Bindings ***"
-  SERVICE_ACC_ROLES="roles/composer.worker,roles/bigquery.dataEditor,roles/bigquery.jobUser,roles/storage.admin,roles/ml.developer,roles/dataflow.developer,roles/compute.viewer,roles/storage.objectAdmin,roles/automl.editor"
-  declare -a roles=(${SERVICE_ACC_ROLES})
+  SVC_ACC_ROLES="roles/composer.worker,roles/bigquery.dataEditor,roles/bigquery.jobUser,roles/storage.admin,roles/ml.developer,roles/dataflow.developer,roles/compute.viewer,roles/storage.objectAdmin,roles/automl.editor"
+  declare -a roles=(${SVC_ACC_ROLES})
   for role in "${roles[@]}"
   do
     echo "Adding role: ${role} to service account $SVC_ACC_NAME"
-    gcloud projects add-iam-policy-binding ${PROJECT_ID} --member "serviceAccount:${SVC_ACC_NAME}@${PROJECT}.iam.gserviceaccount.com" --role "${role}" --quiet > /dev/null || true
+    gcloud projects add-iam-policy-binding ${PROJECT} --member "serviceAccount:${SVC_ACC_NAME}@${PROJECT}.iam.gserviceaccount.com" --role "${role}" --quiet > /dev/null || true
   done
 
   # Get the API key
@@ -119,7 +119,7 @@ main() {
   gsutil mb -l ${REGION} -p ${PROJECT} ${COMPOSER_BUCKET}
   bq --location=EU rm -rf --dataset ${PROJECT}:${DATASET_NAME}
   bq --location=EU mk --dataset ${PROJECT}:${DATASET_NAME}
-  bq mk -t --schema data_source.json ${PROJECT}:${DATASET_NAME}.${TABLE_NAME}
+  bq mk -t --schema ../data_source.json ${PROJECT}:${DATASET_NAME}.${TABLE_NAME}
   bq --location=EU load --source_format=CSV ${PROJECT}:${DATASET_NAME}.${TABLE_NAME} ${BUCKET}/db_dump.csv
 
   #train using AutoML
