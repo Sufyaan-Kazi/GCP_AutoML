@@ -124,6 +124,7 @@ main() {
   cp $KEY_FILE ${LOCAL_FOLDER}/clv_automl
   cd ${LOCAL_FOLDER}/clv_automl
   cat clv_automl.py | sed -e 's/us-central1/europe-west1/g' > clv_automl.py
+  cat clv_automl.py
   python clv_automl.py --project_id ${PROJECT}
 }
 
