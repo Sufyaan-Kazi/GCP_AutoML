@@ -55,6 +55,8 @@ main() {
   cd tensorflow-lifetime-value
 
   # Create the Dev Environment
+  conda env list 
+  conda env list | grep clv | wc -l
   EXISTS=$(conda env list | grep clv | wc -l)
   if [ $EXISTS -eq 0 ]
   then
