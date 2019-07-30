@@ -31,8 +31,6 @@ main() {
   local KEY_FILE=$SERVICE_ACC.json
   local ROLES=roles/viewer
 
-  rm Minic*
-
   #Enable required GCP apis
   enableAPIs $APIS
   printf "******\n\n"
@@ -47,7 +45,7 @@ main() {
     rm -rf ~/miniconda2/
     bash Miniconda2-latest-Linux-x86_64.sh -b
   fi
-  local PATH=~/miniconda2/bin:$PATH
+  export PATH=~/miniconda2/bin:$PATH
 
   #Get the repo
   rm -rf tensorflow-lifetime-value
