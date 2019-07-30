@@ -70,6 +70,7 @@ main() {
 
   # Copy the raw dataset
   gsutil rm -f gs://${BUCKET}
+  gsutil rm -f gs://${COMPOSER_BUCKET}
   gsutil cp gs://solutions-public-assets/ml-clv/db_dump.csv ${BUCKET}
   gsutil cp ${BUCKET}/db_dump.csv ${COMPOSER_BUCKET}
 
@@ -81,6 +82,7 @@ main() {
 
   # Create the Service Accounts
   SVC_ACC_NAME=svcacc-$SCRIPT_NAME
+  gcloud iam service-accounts delete $SVC_ACC_NAME --project ${PROJECT}
   gcloud iam service-accounts create $SVC_ACC_NAME --display-name $SVC_ACC_NAME --project ${PROJECT}
 
   gcloud projects add-iam-policy-binding ${PROJECT} \
