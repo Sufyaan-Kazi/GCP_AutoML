@@ -75,9 +75,9 @@ main() {
   gsutil cp ${BUCKET}/db_dump.csv ${COMPOSER_BUCKET}
 
   # Copy the data to be predicted
-  gsutil cp clv_mle/to_predict.json ${BUCKET}/predictions/
+  gsutil cp clv_automl/to_predict.json ${BUCKET}/predictions/
   gsutil cp ${BUCKET}/predictions/to_predict.json ${COMPOSER_BUCKET}/predictions/
-  gsutil cp clv_mle/to_predict.csv ${BUCKET}/predictions/
+  gsutil cp clv_automl/to_predict.csv ${BUCKET}/predictions/
   gsutil cp ${BUCKET}/predictions/to_predict.csv ${COMPOSER_BUCKET}/predictions/
 
   # Create the Service Accounts
