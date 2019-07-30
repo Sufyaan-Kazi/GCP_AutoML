@@ -123,7 +123,7 @@ main() {
   # Get the API key
   KEY_FILE=mykey.json
   echo "Creating JSON key file $KEY_FILE"
-  gcloud iam service-accounts keys create $KEY_FILE --iam-account ${SERVICE_ACC}.iam.gserviceaccount.com
+  gcloud iam service-accounts keys create $KEY_FILE --iam-account ${SVC_ACC_NAME}@${PROJECT}.iam.gserviceaccount.com
   #gcloud auth activate-service-account --key-file $KEY_FILE
 
   #Store the key in env variable
