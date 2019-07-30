@@ -39,10 +39,15 @@ main() {
 
   # Install Miniconda
   sudo apt-get install -y git bzip2
-  wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh
-  rm -rf ~/miniconda2/
-  bash Miniconda2-latest-Linux-x86_64.sh -b
-  local PATH=~/miniconda2/bin:$PATH
+  if [ -f Miniconda2-latest-Linux-x86_64.sh ]
+  then
+     echo "Miniconda installed already"
+  else
+    wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh
+    rm -rf ~/miniconda2/
+    bash Miniconda2-latest-Linux-x86_64.sh -b
+    local PATH=~/miniconda2/bin:$PATH
+  fi
 
   #Get the repo
   rm -rf tensorflow-lifetime-value
