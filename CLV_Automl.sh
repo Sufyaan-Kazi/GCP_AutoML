@@ -80,14 +80,6 @@ main() {
   # Copy the raw dataset
   gsutil -m rm -rf ${BUCKET}
   gsutil -m rm -rf ${COMPOSER_BUCKET}
-  gsutil mb ${BUCKET}
-  gsutil mb ${COMPOSER_BUCKET}
-  gsutil cp gs://solutions-public-assets/ml-clv/db_dump.csv ${BUCKET}
-  gsutil cp ${BUCKET}/db_dump.csv ${COMPOSER_BUCKET}
-
-  # Copy the data to be predicted
-  gsutil cp clv_automl/to_predict.csv ${BUCKET}/predictions/
-  gsutil cp ${BUCKET}/predictions/to_predict.csv ${COMPOSER_BUCKET}/predictions/
 
   # Create the Service Accounts
   SVC_ACC_NAME=svcacc-$SCRIPT_NAME
@@ -117,6 +109,12 @@ main() {
   #Setup & load Data in BigQuery
   gsutil mb -l ${REGION} -p ${PROJECT} ${BUCKET}
   gsutil mb -l ${REGION} -p ${PROJECT} ${COMPOSER_BUCKET}
+  gsutil cp gs://solutions-public-assets/ml-clv/db_dump.csv ${BUCKET}
+  gsutil cp ${BUCKET}/db_dump.csv ${COMPOSER_BUCKET}
+  # Copy the data to be predicted
+  gsutil cp clv_automl/to_predict.csv ${BUCKET}/predictions/
+  gsutil cp ${BUCKET}/predictions/to_predict.csv ${COMPOSER_BUCKET}/predictions/
+
   bq --location=EU rm -rf --dataset ${PROJECT}:${DATASET_NAME}
   bq --location=EU mk --dataset ${PROJECT}:${DATASET_NAME}
   bq mk -t --schema ../data_source.json ${PROJECT}:${DATASET_NAME}.${TABLE_NAME}
