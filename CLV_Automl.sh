@@ -40,6 +40,7 @@ main() {
   # Install Miniconda
   sudo apt-get install -y git bzip2
   wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh
+  rm -rf ~/miniconda2/
   bash Miniconda2-latest-Linux-x86_64.sh -b
   local PATH=~/miniconda2/bin:$PATH
 
@@ -49,10 +50,14 @@ main() {
   cd tensorflow-lifetime-value
 
   # Create the Dev Environment
-  conda create -y -n clv
-  source activate clv
-  conda install -y -n clv python=2.7 pip
-  pip install -r requirements.txt
+  EXISTS=$(conda env list | grep clv | wc -l)
+  if [ $EXISTS -eq 0 ]
+  then
+    conda create -y -n clv
+    source activate clv
+    conda install -y -n clv python=2.7 pip
+    pip install -r requirements.txt
+  fi
 
   #Setup environment for Airflow
   local BUCKET=gs://${PROJECT}_data_final
@@ -84,41 +89,14 @@ main() {
   gcloud iam service-accounts delete $SVC_ACC_NAME --project ${PROJECT}
   gcloud iam service-accounts create $SVC_ACC_NAME --display-name $SVC_ACC_NAME --project ${PROJECT}
 
-  gcloud projects add-iam-policy-binding ${PROJECT} \
-  --member serviceAccount:$SVC_ACC_NAME@${PROJECT}.iam.gserviceaccount.com \
-  --role roles/composer.worker
-
-  gcloud projects add-iam-policy-binding ${PROJECT} \
-  --member serviceAccount:$SVC_ACC_NAME@${PROJECT}.iam.gserviceaccount.com \
-  --role roles/bigquery.dataEditor
-
-  gcloud projects add-iam-policy-binding ${PROJECT} \
-  --member serviceAccount:$SVC_ACC_NAME@${PROJECT}.iam.gserviceaccount.com \
-  --role roles/bigquery.jobUser
-
-  gcloud projects add-iam-policy-binding ${PROJECT} \
-  --member serviceAccount:$SVC_ACC_NAME@${PROJECT}.iam.gserviceaccount.com \
-  --role roles/storage.admin
-
-  gcloud projects add-iam-policy-binding ${PROJECT} \
-  --member serviceAccount:$SVC_ACC_NAME@${PROJECT}.iam.gserviceaccount.com \
-  --role roles/ml.developer
-
-  gcloud projects add-iam-policy-binding ${PROJECT} \
-  --member serviceAccount:$SVC_ACC_NAME@${PROJECT}.iam.gserviceaccount.com \
-  --role roles/dataflow.developer
-
-  gcloud projects add-iam-policy-binding ${PROJECT} \
-  --member serviceAccount:$SVC_ACC_NAME@${PROJECT}.iam.gserviceaccount.com \
-  --role roles/compute.viewer
-
-  gcloud projects add-iam-policy-binding ${PROJECT} \
-  --member serviceAccount:$SVC_ACC_NAME@${PROJECT}.iam.gserviceaccount.com \
-  --role roles/storage.objectAdmin
-
-  gcloud projects add-iam-policy-binding ${PROJECT} \
-  --member serviceAccount:$SVC_ACC_NAME@${PROJECT}.iam.gserviceaccount.com \
-  --role='roles/automl.editor'
+  echo "*** Adding Role Policy Bindings ***"
+  SERVICE_ACC_ROLES="roles/composer.worker,roles/bigquery.dataEditor,roles/bigquery.jobUser,roles/storage.admin,roles/ml.developer,roles/dataflow.developer,roles/compute.viewer,roles/storage.objectAdmin,roles/automl.editor"
+  declare -a roles=(${SERVICE_ACC_ROLES})
+  for role in "${roles[@]}"
+  do
+    echo "Adding role: ${role} to service account $SVC_ACC_NAME"
+    gcloud projects add-iam-policy-binding ${PROJECT_ID} --member "serviceAccount:${SVC_ACC_NAME}@${PROJECT}.iam.gserviceaccount.com" --role "${role}" --quiet > /dev/null || true
+  done
 
   # Get the API key
   KEY_FILE=mykey.json
