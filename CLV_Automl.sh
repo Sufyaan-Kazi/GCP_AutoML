@@ -27,7 +27,7 @@ main() {
   local APIS="composer dataflow automl"
   local PROJECT=$(gcloud config list project --format "value(core.project)")
   local SCRIPT_NAME=clv_automl
-  local SERVICE_ACC=svcacc-$SCRIPT_NAME@$PROJECT
+  local SERVICE_ACC=svcacc-$SVC_ACC_NAME@$PROJECT
   local KEY_FILE=$SERVICE_ACC.json
   local ROLES=roles/viewer
 
@@ -81,42 +81,43 @@ main() {
   gsutil cp ${BUCKET}/predictions/to_predict.csv ${COMPOSER_BUCKET}/predictions/
 
   # Create the Service Accounts
-  gcloud iam service-accounts create $SCRIPT_NAME --display-name $SCRIPT_NAME --project ${PROJECT}
+  SVC_ACC_NAME=svcacc-$SCRIPT_NAME
+  gcloud iam service-accounts create $SVC_ACC_NAME --display-name $SVC_ACC_NAME --project ${PROJECT}
 
   gcloud projects add-iam-policy-binding ${PROJECT} \
-  --member serviceAccount:$SCRIPT_NAME@${PROJECT}.iam.gserviceaccount.com \
+  --member serviceAccount:$SVC_ACC_NAME@${PROJECT}.iam.gserviceaccount.com \
   --role roles/composer.worker
 
   gcloud projects add-iam-policy-binding ${PROJECT} \
-  --member serviceAccount:$SCRIPT_NAME@${PROJECT}.iam.gserviceaccount.com \
+  --member serviceAccount:$SVC_ACC_NAME@${PROJECT}.iam.gserviceaccount.com \
   --role roles/bigquery.dataEditor
 
   gcloud projects add-iam-policy-binding ${PROJECT} \
-  --member serviceAccount:$SCRIPT_NAME@${PROJECT}.iam.gserviceaccount.com \
+  --member serviceAccount:$SVC_ACC_NAME@${PROJECT}.iam.gserviceaccount.com \
   --role roles/bigquery.jobUser
 
   gcloud projects add-iam-policy-binding ${PROJECT} \
-  --member serviceAccount:$SCRIPT_NAME@${PROJECT}.iam.gserviceaccount.com \
+  --member serviceAccount:$SVC_ACC_NAME@${PROJECT}.iam.gserviceaccount.com \
   --role roles/storage.admin
 
   gcloud projects add-iam-policy-binding ${PROJECT} \
-  --member serviceAccount:$SCRIPT_NAME@${PROJECT}.iam.gserviceaccount.com \
+  --member serviceAccount:$SVC_ACC_NAME@${PROJECT}.iam.gserviceaccount.com \
   --role roles/ml.developer
 
   gcloud projects add-iam-policy-binding ${PROJECT} \
-  --member serviceAccount:$SCRIPT_NAME@${PROJECT}.iam.gserviceaccount.com \
+  --member serviceAccount:$SVC_ACC_NAME@${PROJECT}.iam.gserviceaccount.com \
   --role roles/dataflow.developer
 
   gcloud projects add-iam-policy-binding ${PROJECT} \
-  --member serviceAccount:$SCRIPT_NAME@${PROJECT}.iam.gserviceaccount.com \
+  --member serviceAccount:$SVC_ACC_NAME@${PROJECT}.iam.gserviceaccount.com \
   --role roles/compute.viewer
 
   gcloud projects add-iam-policy-binding ${PROJECT} \
-  --member serviceAccount:$SCRIPT_NAME@${PROJECT}.iam.gserviceaccount.com \
+  --member serviceAccount:$SVC_ACC_NAME@${PROJECT}.iam.gserviceaccount.com \
   --role roles/storage.objectAdmin
 
   gcloud projects add-iam-policy-binding ${PROJECT} \
-  --member serviceAccount:$SCRIPT_NAME@${PROJECT}.iam.gserviceaccount.com \
+  --member serviceAccount:$SVC_ACC_NAME@${PROJECT}.iam.gserviceaccount.com \
   --role='roles/automl.editor'
 
   # Get the API key
