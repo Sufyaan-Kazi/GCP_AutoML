@@ -26,7 +26,7 @@
 main() {
   local APIS="composer dataflow automl"
   local PROJECT=$(gcloud config list project --format "value(core.project)")
-  local SCRIPT_NAME=clv_automl
+  local SCRIPT_NAME=clv-automl
   local SERVICE_ACC=svcacc-$SVC_ACC_NAME@$PROJECT
   local KEY_FILE=$SERVICE_ACC.json
   local ROLES=roles/viewer
