@@ -36,7 +36,7 @@ enableAPIs() {
 
   for api in "${REQ_APIS[@]}"
   do
-    printf "\tChecking to see if ${api} api is enabled on this project\n"
+    #printf "\tChecking to see if ${api} api is enabled on this project\n"
     local API_EXISTS=$(echo ${ENABLED_APIS} | grep ${api}.googleapis.com | wc -l)
     if [ ${API_EXISTS} -eq 0 ]
     then
