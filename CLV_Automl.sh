@@ -46,8 +46,8 @@ main() {
     wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh
     rm -rf ~/miniconda2/
     bash Miniconda2-latest-Linux-x86_64.sh -b
-    local PATH=~/miniconda2/bin:$PATH
   fi
+  local PATH=~/miniconda2/bin:$PATH
 
   #Get the repo
   rm -rf tensorflow-lifetime-value
