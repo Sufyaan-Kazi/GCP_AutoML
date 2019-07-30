@@ -78,8 +78,8 @@ main() {
   local LOCAL_FOLDER=$(pwd)
 
   # Copy the raw dataset
-  gsutil rm -rf ${BUCKET}
-  gsutil rm -rf ${COMPOSER_BUCKET}
+  gsutil -m rm -rf ${BUCKET}
+  gsutil -m rm -rf ${COMPOSER_BUCKET}
   gsutil mb ${BUCKET}
   gsutil mb ${COMPOSER_BUCKET}
   gsutil cp gs://solutions-public-assets/ml-clv/db_dump.csv ${BUCKET}
