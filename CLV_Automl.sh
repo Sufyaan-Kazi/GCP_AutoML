@@ -44,6 +44,7 @@ main() {
   local PATH=~/miniconda2/bin:$PATH
 
   #Get the repo
+  rm -rf tensorflow-lifetime-value
   git clone https://github.com/GoogleCloudPlatform/tensorflow-lifetime-value.git
   cd tensorflow-lifetime-value
 
@@ -75,8 +76,6 @@ main() {
   gsutil cp ${BUCKET}/db_dump.csv ${COMPOSER_BUCKET}
 
   # Copy the data to be predicted
-  gsutil cp clv_automl/to_predict.json ${BUCKET}/predictions/
-  gsutil cp ${BUCKET}/predictions/to_predict.json ${COMPOSER_BUCKET}/predictions/
   gsutil cp clv_automl/to_predict.csv ${BUCKET}/predictions/
   gsutil cp ${BUCKET}/predictions/to_predict.csv ${COMPOSER_BUCKET}/predictions/
 
@@ -141,6 +140,7 @@ main() {
   bq --location=EU load --source_format=CSV ${PROJECT}:${DATASET_NAME}.${TABLE_NAME} ${BUCKET}/db_dump.csv
 
   #train using AutoML
+  cp $KEY_FILE ${LOCAL_FOLDER}/clv_automl
   cd ${LOCAL_FOLDER}/clv_automl
   cat clv_automl.py | sed -e 's/us-central1/europe-west1/g' > clv_automl.py
   python clv_automl.py --project_id ${PROJECT}
