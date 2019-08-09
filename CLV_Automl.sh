@@ -83,6 +83,7 @@ main() {
 
   # Create the Service Accounts
   SVC_ACC_NAME=svcacc-$SCRIPT_NAME
+  SVC_ACC_NAME=composer
   gcloud iam service-accounts delete $SVC_ACC_NAME@${PROJECT}.iam.gserviceaccount.com -q
   gcloud iam service-accounts create $SVC_ACC_NAME --display-name $SVC_ACC_NAME --project ${PROJECT}
 
