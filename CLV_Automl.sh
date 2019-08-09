@@ -103,7 +103,7 @@ main() {
   #gcloud auth activate-service-account --key-file $KEY_FILE
 
   #Store the key in env variable
-  export GOOGLE_APPLICATION_CREDENTIALS=./${KEY_FILE}
+  export GOOGLE_APPLICATION_CREDENTIALS=${KEY_FILE}
   echo ${GOOGLE_APPLICATION_CREDENTIALS}
   echo GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS} 
 
