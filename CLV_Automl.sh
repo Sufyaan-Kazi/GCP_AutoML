@@ -118,8 +118,8 @@ main() {
 
   bq --location=US rm -rf --dataset ${PROJECT}:${DATASET_NAME}
   bq --location=US mk --dataset ${PROJECT}:${DATASET_NAME}
-  #bq mk -t --schema ../data_source.json ${PROJECT}:${DATASET_NAME}.${TABLE_NAME}
-  #bq --location=US load --source_format=CSV ${PROJECT}:${DATASET_NAME}.${TABLE_NAME} ${BUCKET}/db_dump.csv
+  bq mk -t --schema ../data_source.json ${PROJECT}:${DATASET_NAME}.${TABLE_NAME}
+  bq --location=US load --source_format=CSV ${PROJECT}:${DATASET_NAME}.${TABLE_NAME} ${BUCKET}/db_dump.csv
 
   #train using AutoML
   cp $KEY_FILE ${LOCAL_FOLDER}/clv_automl
