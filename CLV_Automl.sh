@@ -59,12 +59,12 @@ main() {
     conda create -y -n clv
     source activate clv
     conda install -y -n clv python=2.7 pip
-    pip install -r requirements.txt
   fi
+  pip install -r requirements.txt
 
   #Setup environment for Airflow
   local BUCKET=gs://${PROJECT}_data_final
-  local REGION=europe-west1
+  local REGION=us-west1
   local DATASET_NAME=ltv
   local TABLE_NAME=data_source
 
@@ -115,16 +115,16 @@ main() {
   gsutil cp clv_automl/to_predict.csv ${BUCKET}/predictions/
   gsutil cp ${BUCKET}/predictions/to_predict.csv ${COMPOSER_BUCKET}/predictions/
 
-  bq --location=EU rm -rf --dataset ${PROJECT}:${DATASET_NAME}
-  bq --location=EU mk --dataset ${PROJECT}:${DATASET_NAME}
+  bq --location=US rm -rf --dataset ${PROJECT}:${DATASET_NAME}
+  bq --location=US mk --dataset ${PROJECT}:${DATASET_NAME}
   bq mk -t --schema ../data_source.json ${PROJECT}:${DATASET_NAME}.${TABLE_NAME}
-  bq --location=EU load --source_format=CSV ${PROJECT}:${DATASET_NAME}.${TABLE_NAME} ${BUCKET}/db_dump.csv
+  bq --location=US load --source_format=CSV ${PROJECT}:${DATASET_NAME}.${TABLE_NAME} ${BUCKET}/db_dump.csv
 
   #train using AutoML
   cp $KEY_FILE ${LOCAL_FOLDER}/clv_automl
   cd ${LOCAL_FOLDER}/clv_automl
   cp clv_automl.py clv_automl.orig
-  cat clv_automl.orig | sed -e 's/us-central1/europe-west1/g' > clv_automl.py
+  #cat clv_automl.orig | sed -e 's/us-central1/europe-west1/g' > clv_automl.py
   python clv_automl.py --project_id ${PROJECT}
 }
 
