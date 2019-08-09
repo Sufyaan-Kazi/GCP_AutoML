@@ -64,7 +64,7 @@ main() {
 
   #Setup environment for Airflow
   local BUCKET=gs://${PROJECT}_data_final
-  local REGION=us-west1
+  local REGION=us-central1
   local DATASET_NAME=ltv
   local TABLE_NAME=data_source
 
@@ -104,7 +104,7 @@ main() {
   #Store the key in env variable
   export GOOGLE_APPLICATION_CREDENTIALS=${KEY_FILE}
   echo ${GOOGLE_APPLICATION_CREDENTIALS}
-  echo GOOGLE_APPLICATION_CREDENTIAL=${GOOGLE_APPLICATION_CREDENTIALS} 
+  echo GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS} 
 
   #Setup & load Data in BigQuery
   gsutil mb -l ${REGION} -p ${PROJECT} ${BUCKET}
@@ -117,13 +117,13 @@ main() {
 
   bq --location=US rm -rf --dataset ${PROJECT}:${DATASET_NAME}
   bq --location=US mk --dataset ${PROJECT}:${DATASET_NAME}
-  bq mk -t --schema ../data_source.json ${PROJECT}:${DATASET_NAME}.${TABLE_NAME}
-  bq --location=US load --source_format=CSV ${PROJECT}:${DATASET_NAME}.${TABLE_NAME} ${BUCKET}/db_dump.csv
+  #bq mk -t --schema ../data_source.json ${PROJECT}:${DATASET_NAME}.${TABLE_NAME}
+  #bq --location=US load --source_format=CSV ${PROJECT}:${DATASET_NAME}.${TABLE_NAME} ${BUCKET}/db_dump.csv
 
   #train using AutoML
   cp $KEY_FILE ${LOCAL_FOLDER}/clv_automl
   cd ${LOCAL_FOLDER}/clv_automl
-  cp clv_automl.py clv_automl.orig
+  #cp clv_automl.py clv_automl.orig
   #cat clv_automl.orig | sed -e 's/us-central1/europe-west1/g' > clv_automl.py
   python clv_automl.py --project_id ${PROJECT}
 }
