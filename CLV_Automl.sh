@@ -34,6 +34,8 @@ main() {
   enableAPIs $APIS
 
   PROJECT=$(gcloud config list project --format "value(core.project)")
+  COMPOSER_BUCKET_NAME=${PROJECT}_composer_final
+  COMPOSER_BUCKET=gs://${COMPOSER_BUCKET_NAME}
 
   #Get the repo
   if [ ! -d tensorflow-lifetime-value ]
@@ -62,11 +64,10 @@ main() {
   rm -f $KEY_FILE
   echo "Creating JSON key file $KEY_FILE"
   gcloud iam service-accounts keys create $KEY_FILE --iam-account ${SVC_ACC_NAME}@${PROJECT}.iam.gserviceaccount.com
-  cat $KEY_FILE
   export GOOGLE_APPLICATION_CREDENTIALS=${KEY_FILE}
 
   #train using AutoML
-  python clv_automl.py --project_id ${PROJECT} --key_file ${KEY_FILE}
+  python clv_automl.py --project_id ${PROJECT} --key_file ${KEY_FILE} --batch_gcs_input ${COMPOSER_BUCKET}/predictions/to_predict.csv --batch_gcs_output ${COMPOSER_BUCKET}/predictions/output
 
   #Remove Service Account Key
   removeServiceAccount
@@ -74,9 +75,6 @@ main() {
 
 getData() {
   local BUCKET=gs://${PROJECT}_data_final
-  local COMPOSER_NAME="clv-final"
-  local COMPOSER_BUCKET_NAME=${PROJECT}_composer_final
-  local COMPOSER_BUCKET=gs://${COMPOSER_BUCKET_NAME}
   local DF_STAGING=${COMPOSER_BUCKET}/dataflow_staging
   local DF_ZONE=${REGION}-a
   local SQL_MP_LOCATION="sql"
