@@ -136,15 +136,19 @@ createCondaEnv() {
 }
 
 createServiceAccount() {
-  # Create the Service Accounts
-  gcloud iam service-accounts create $SVC_ACC_NAME --display-name $SVC_ACC_NAME --project ${PROJECT}
-  echo "*** Adding Role Policy Bindings ***"
-  declare -a roles=(${SVC_ACC_ROLES})
-  for role in "${roles[@]}"
-  do
-    echo "Adding role: ${role} to service account $SVC_ACC_NAME"
-    gcloud projects add-iam-policy-binding ${PROJECT} --member "serviceAccount:${SVC_ACC_NAME}@${PROJECT}.iam.gserviceaccount.com" --role "${role}" --quiet > /dev/null || true
-  done
+  EXISTS=$(gcloud iam service-accounts list | grep ${SVC_ACC_NAME}@${PROJECT}.iam.gserviceaccount.com)
+  if [ $EXISTS -eq 0 ]
+  then
+    # Create the Service Accounts
+    gcloud iam service-accounts create $SVC_ACC_NAME --display-name $SVC_ACC_NAME --project ${PROJECT}
+    echo "*** Adding Role Policy Bindings ***"
+    declare -a roles=(${SVC_ACC_ROLES})
+    for role in "${roles[@]}"
+    do
+      echo "Adding role: ${role} to service account $SVC_ACC_NAME"
+      gcloud projects add-iam-policy-binding ${PROJECT} --member "serviceAccount:${SVC_ACC_NAME}@${PROJECT}.iam.gserviceaccount.com" --role "${role}" --quiet > /dev/null || true
+    done
+  fi
 }
 
 removeServiceAccount() {
