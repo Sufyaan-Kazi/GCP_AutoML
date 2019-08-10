@@ -24,7 +24,7 @@ set -o errexit
 set -o pipefail
 set -o nounset
 #Debugging
-set -o xtrace
+#set -o xtrace
 
 . ./common.sh
 PROGNAME=$(basename $0)
@@ -41,7 +41,7 @@ main() {
   cd tensorflow-lifetime-value
 
   # Create the Service Accounts
-  SVC_ACC_NAME=composer2
+  SVC_ACC_NAME=svcacc-clv-automl
   SVC_ACC_ROLES="roles/composer.worker roles/bigquery.dataEditor roles/bigquery.jobUser roles/storage.admin roles/ml.developer roles/dataflow.developer roles/compute.viewer roles/storage.objectAdmin roles/automl.editor"
   createServiceAccount
 
