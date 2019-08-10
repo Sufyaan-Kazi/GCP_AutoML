@@ -24,7 +24,7 @@ set -o errexit
 set -o pipefail
 set -o nounset
 #Debugging
-#set -o xtrace
+set -o xtrace
 
 . ./common.sh
 PROGNAME=$(basename $0)
@@ -52,6 +52,7 @@ main() {
   #source activate clv
 
   # Get into the AutoML folder
+  pwd
   cd clv_automl
   local LOCAL_FOLDER=$(pwd)
 
