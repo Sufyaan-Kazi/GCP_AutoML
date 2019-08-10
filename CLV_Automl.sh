@@ -82,7 +82,7 @@ main() {
   gsutil -m rm -rf ${COMPOSER_BUCKET}
 
   # Create the Service Accounts
-  SVC_ACC_NAME=svcacc-$SCRIPT_NAME
+  #SVC_ACC_NAME=svcacc-$SCRIPT_NAME
   SVC_ACC_NAME=composer
   gcloud iam service-accounts delete $SVC_ACC_NAME@${PROJECT}.iam.gserviceaccount.com -q
   gcloud iam service-accounts create $SVC_ACC_NAME --display-name $SVC_ACC_NAME --project ${PROJECT}
@@ -100,6 +100,7 @@ main() {
   KEY_FILE=mykey.json
   echo "Creating JSON key file $KEY_FILE"
   gcloud iam service-accounts keys create $KEY_FILE --iam-account ${SVC_ACC_NAME}@${PROJECT}.iam.gserviceaccount.com
+  chmod 777 $KEY_FILE
   #gcloud auth activate-service-account --key-file $KEY_FILE
 
   #Store the key in env variable
