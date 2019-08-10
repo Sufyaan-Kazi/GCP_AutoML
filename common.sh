@@ -28,11 +28,11 @@ enableAPIs() {
     exit 1
   fi
 
-  echo "Required apis for this project are: $@"
+  #echo "Required apis for this project are: $@"
   declare -a REQ_APIS=(${@})
 
   local ENABLED_APIS=$(gcloud services list --enabled | grep -v NAME | sort | cut -d " " -f1)
-  echo "Current APIs enabled are: ${ENABLED_APIS}"
+  #echo "Current APIs enabled are: ${ENABLED_APIS}"
 
   for api in "${REQ_APIS[@]}"
   do

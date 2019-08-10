@@ -35,33 +35,6 @@ main() {
   enableAPIs $APIS
   printf "******\n\n"
 
-  # Install Miniconda
-  sudo apt-get install -y git bzip2
-  if [ -f Miniconda2-latest-Linux-x86_64.sh ]
-  then
-     echo "Miniconda installed already"
-  else
-    wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh
-    rm -rf ~/miniconda2/
-    bash Miniconda2-latest-Linux-x86_64.sh -b
-  fi
-  export PATH=~/miniconda2/bin:$PATH
-
-  #Get the repo
-  rm -rf tensorflow-lifetime-value
-  git clone https://github.com/GoogleCloudPlatform/tensorflow-lifetime-value.git
-  cd tensorflow-lifetime-value
-
-  # Create the Dev Environment
-  EXISTS=$(conda env list | grep clv | wc -l)
-  if [ $EXISTS -eq 0 ]
-  then
-    conda create -y -n clv
-    source activate clv
-    conda install -y -n clv python=2.7 pip
-  fi
-  pip install -r requirements.txt
-
   #Setup environment for Airflow
   local BUCKET=gs://${PROJECT}_data_final
   local REGION=us-central1
@@ -75,14 +48,27 @@ main() {
   local DF_ZONE=${REGION}-a
   local SQL_MP_LOCATION="sql"
 
-
   # Copy the raw dataset
   gsutil -m rm -rf ${BUCKET}
   gsutil -m rm -rf ${COMPOSER_BUCKET}
 
+  #Setup & load Data in BigQuery
+  gsutil mb -l ${REGION} -p ${PROJECT} ${BUCKET}
+  gsutil mb -l ${REGION} -p ${PROJECT} ${COMPOSER_BUCKET}
+  gsutil cp gs://solutions-public-assets/ml-clv/db_dump.csv ${BUCKET}
+  gsutil cp ${BUCKET}/db_dump.csv ${COMPOSER_BUCKET}
+  # Copy the data to be predicted
+  gsutil cp clv_automl/to_predict.csv ${BUCKET}/predictions/
+  gsutil cp ${BUCKET}/predictions/to_predict.csv ${COMPOSER_BUCKET}/predictions/
+  bq --location=US rm -rf --dataset ${PROJECT}:${DATASET_NAME}
+  bq --location=US mk --dataset ${PROJECT}:${DATASET_NAME}
+  bq mk -t --schema ../data_source.json ${PROJECT}:${DATASET_NAME}.${TABLE_NAME}
+  bq --location=US load --source_format=CSV ${PROJECT}:${DATASET_NAME}.${TABLE_NAME} ${BUCKET}/db_dump.csv
+  bq query --destination_table ${PROJECT}:${DATASET_NAME}.data_cleaned --use_legacy_sql=false < ../clean.sql
+  bq query --destination_table ${PROJECT}:${DATASET_NAME}.features_n_target --use_legacy_sql=false < ../features_n_target.sql
+
   # Create the Service Accounts
-  #SVC_ACC_NAME=svcacc-$SCRIPT_NAME
-  SVC_ACC_NAME=composer
+  SVC_ACC_NAME=composer2
   gcloud iam service-accounts delete $SVC_ACC_NAME@${PROJECT}.iam.gserviceaccount.com -q
   gcloud iam service-accounts create $SVC_ACC_NAME --display-name $SVC_ACC_NAME --project ${PROJECT}
 
@@ -95,39 +81,43 @@ main() {
     gcloud projects add-iam-policy-binding ${PROJECT} --member "serviceAccount:${SVC_ACC_NAME}@${PROJECT}.iam.gserviceaccount.com" --role "${role}" --quiet > /dev/null || true
   done
 
-  #Store the key in env variable
-  #export GOOGLE_APPLICATION_CREDENTIALS=${KEY_FILE}
-  #echo ${GOOGLE_APPLICATION_CREDENTIALS}
-  #echo GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS} 
+  #Get the repo
+  rm -rf tensorflow-lifetime-value
+  git clone https://github.com/GoogleCloudPlatform/tensorflow-lifetime-value.git
+  cd tensorflow-lifetime-value
 
-  #Setup & load Data in BigQuery
-  gsutil mb -l ${REGION} -p ${PROJECT} ${BUCKET}
-  gsutil mb -l ${REGION} -p ${PROJECT} ${COMPOSER_BUCKET}
-  gsutil cp gs://solutions-public-assets/ml-clv/db_dump.csv ${BUCKET}
-  gsutil cp ${BUCKET}/db_dump.csv ${COMPOSER_BUCKET}
-  # Copy the data to be predicted
-  gsutil cp clv_automl/to_predict.csv ${BUCKET}/predictions/
-  gsutil cp ${BUCKET}/predictions/to_predict.csv ${COMPOSER_BUCKET}/predictions/
+  # Install Miniconda
+  sudo apt-get install -y git bzip2
+  #if [ ! -f Miniconda2-latest-Linux-x86_64.sh ]
+  #then
+    wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh
+    rm -rf ~/miniconda2/
+    bash Miniconda2-latest-Linux-x86_64.sh -b
+  #fi
+  export PATH=~/miniconda2/bin:$PATH
 
-  bq --location=US rm -rf --dataset ${PROJECT}:${DATASET_NAME}
-  bq --location=US mk --dataset ${PROJECT}:${DATASET_NAME}
-  bq mk -t --schema ../data_source.json ${PROJECT}:${DATASET_NAME}.${TABLE_NAME}
-  bq --location=US load --source_format=CSV ${PROJECT}:${DATASET_NAME}.${TABLE_NAME} ${BUCKET}/db_dump.csv
-  bq query --destination_table ${PROJECT}:${DATASET_NAME}.data_cleaned --use_legacy_sql=false < ../clean.sql
-  bq query --destination_table ${PROJECT}:${DATASET_NAME}.features_n_target --use_legacy_sql=false < ../features_n_target.sql
+  # Create the Dev Environment
+  EXISTS=$(conda env list | grep clv | wc -l)
+  #if [ $EXISTS -eq 0 ]
+  #then
+    conda create -y -n clv
+    source activate clv
+    conda install -y -n clv python=2.7 pip
+  #fi
+  pip install -r requirements.txt
 
-  #train using AutoML
+  # Get the API key
   cd clv_automl
   local LOCAL_FOLDER=$(pwd)
-  # Get the API key
   KEY_FILE=${LOCAL_FOLDER}/mykey.json
   rm -f $KEY_FILE
   echo "Creating JSON key file $KEY_FILE"
   gcloud iam service-accounts keys create $KEY_FILE --iam-account ${SVC_ACC_NAME}@${PROJECT}.iam.gserviceaccount.com
-  chmod 777 $KEY_FILE
-  #cp clv_automl.py clv_automl.orig
-  #cat clv_automl.orig | sed -e 's/us-central1/europe-west1/g' > clv_automl.py
-  python clv_automl.py --project_id ${PROJECT}
+  cat $KEY_FILE
+  export GOOGLE_APPLICATION_CREDENTIALS=${KEY_FILE}
+
+  #train using AutoML
+  python clv_automl.py --project_id ${PROJECT} --key_file ${KEY_FILE}
 }
 
 main
