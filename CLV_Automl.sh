@@ -75,7 +75,6 @@ main() {
   local DF_ZONE=${REGION}-a
   local SQL_MP_LOCATION="sql"
 
-  local LOCAL_FOLDER=$(pwd)
 
   # Copy the raw dataset
   gsutil -m rm -rf ${BUCKET}
@@ -96,17 +95,10 @@ main() {
     gcloud projects add-iam-policy-binding ${PROJECT} --member "serviceAccount:${SVC_ACC_NAME}@${PROJECT}.iam.gserviceaccount.com" --role "${role}" --quiet > /dev/null || true
   done
 
-  # Get the API key
-  KEY_FILE=mykey.json
-  echo "Creating JSON key file $KEY_FILE"
-  gcloud iam service-accounts keys create $KEY_FILE --iam-account ${SVC_ACC_NAME}@${PROJECT}.iam.gserviceaccount.com
-  chmod 777 $KEY_FILE
-  #gcloud auth activate-service-account --key-file $KEY_FILE
-
   #Store the key in env variable
-  export GOOGLE_APPLICATION_CREDENTIALS=${KEY_FILE}
-  echo ${GOOGLE_APPLICATION_CREDENTIALS}
-  echo GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS} 
+  #export GOOGLE_APPLICATION_CREDENTIALS=${KEY_FILE}
+  #echo ${GOOGLE_APPLICATION_CREDENTIALS}
+  #echo GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS} 
 
   #Setup & load Data in BigQuery
   gsutil mb -l ${REGION} -p ${PROJECT} ${BUCKET}
@@ -125,8 +117,14 @@ main() {
   bq query --destination_table ${PROJECT}:${DATASET_NAME}.features_n_target --use_legacy_sql=false < ../features_n_target.sql
 
   #train using AutoML
-  cp $KEY_FILE ${LOCAL_FOLDER}/clv_automl
-  cd ${LOCAL_FOLDER}/clv_automl
+  cd clv_automl
+  local LOCAL_FOLDER=$(pwd)
+  # Get the API key
+  KEY_FILE=${LOCAL_FOLDER}/mykey.json
+  rm -f $KEY_FILE
+  echo "Creating JSON key file $KEY_FILE"
+  gcloud iam service-accounts keys create $KEY_FILE --iam-account ${SVC_ACC_NAME}@${PROJECT}.iam.gserviceaccount.com
+  chmod 777 $KEY_FILE
   #cp clv_automl.py clv_automl.orig
   #cat clv_automl.orig | sed -e 's/us-central1/europe-west1/g' > clv_automl.py
   python clv_automl.py --project_id ${PROJECT}
