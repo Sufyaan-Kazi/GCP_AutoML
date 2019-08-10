@@ -136,23 +136,29 @@ createCondaEnv() {
 createServiceAccount() {
   local EXISTS=$(gcloud iam service-accounts list | grep ${SVC_ACC_NAME}@${PROJECT}.iam.gserviceaccount.com | wc -l)
   echo $EXISTS
-  if [ ${EXISTS} -eq 0 ]
+  if [ ${EXISTS} -ne 0 ]
   then
-    # Create the Service Accounts
-    gcloud iam service-accounts create $SVC_ACC_NAME --display-name $SVC_ACC_NAME --project ${PROJECT}
-    echo "*** Adding Role Policy Bindings ***"
-    declare -a roles=(${SVC_ACC_ROLES})
-    for role in "${roles[@]}"
-    do
-      echo "Adding role: ${role} to service account $SVC_ACC_NAME"
-      gcloud projects add-iam-policy-binding ${PROJECT} --member "serviceAccount:${SVC_ACC_NAME}@${PROJECT}.iam.gserviceaccount.com" --role "${role}" --quiet > /dev/null || true
-    done
+    # GCE Enforcer now renders previous one useless :(
+    removeServiceAccount
   fi
+
+  # Create the Service Accounts
+  gcloud iam service-accounts create $SVC_ACC_NAME --display-name $SVC_ACC_NAME --project ${PROJECT}
+  echo "*** Adding Role Policy Bindings ***"
+  declare -a roles=(${SVC_ACC_ROLES})
+  for role in "${roles[@]}"
+  do
+    echo "Adding role: ${role} to service account $SVC_ACC_NAME"
+    gcloud projects add-iam-policy-binding ${PROJECT} --member "serviceAccount:${SVC_ACC_NAME}@${PROJECT}.iam.gserviceaccount.com" --role "${role}" --quiet > /dev/null || true
+  done
 }
 
 removeServiceAccount() {
-  KEY=$(gcloud iam service-accounts keys list --iam-account $SVC_ACC_NAME@${PROJECT}.iam.gserviceaccount.com --managed-by user | grep -v KEY | xargs | cut -d " " -f 1)
-  gcloud iam service-accounts keys delete ${KEY} --iam-account $SVC_ACC_NAME@${PROJECT}.iam.gserviceaccount.com  -q || true
+  KEY=$(gcloud iam service-accounts keys list --iam-account $SVC_ACC_NAME@${PROJECT}.iam.gserviceaccount.com --managed-by user | grep -v KEY | xargs | cut -d " " -f 1)A
+  if [ ! -z ${KEY} ]
+    gcloud iam service-accounts keys delete ${KEY} --iam-account $SVC_ACC_NAME@${PROJECT}.iam.gserviceaccount.com  -q || true
+  fi
+
   gcloud iam service-accounts delete $SVC_ACC_NAME@${PROJECT}.iam.gserviceaccount.com -q || true
   declare -a roles=(${SVC_ACC_ROLES})
   for role in "${roles[@]}"
