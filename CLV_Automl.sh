@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Copyright 2018 Google LLC. This software is provided as-is, without warranty or representation for any use or purpose. Your use of it is subject to your agreements with Google.  
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -125,8 +125,8 @@ installMiniConda() {
 
 createCondaEnv() {
   # Create the Dev Environment
-  EXISTS=$(conda env list | grep clv | wc -l)
-  if [ $EXISTS -eq 0 ]
+  local EXISTS=$(conda env list | grep clv | wc -l)
+  if [ ${EXISTS} -eq 0 ]
   then
     conda create -y -n clv
     conda install -y -n clv python=2.7 pip
@@ -136,8 +136,8 @@ createCondaEnv() {
 }
 
 createServiceAccount() {
-  EXISTS=$(gcloud iam service-accounts list | grep ${SVC_ACC_NAME}@${PROJECT}.iam.gserviceaccount.com)
-  if [ $EXISTS -eq 0 ]
+  local EXISTS=$(gcloud iam service-accounts list | grep ${SVC_ACC_NAME}@${PROJECT}.iam.gserviceaccount.com)
+  if [ ${EXISTS} -eq 0 ]
   then
     # Create the Service Accounts
     gcloud iam service-accounts create $SVC_ACC_NAME --display-name $SVC_ACC_NAME --project ${PROJECT}
