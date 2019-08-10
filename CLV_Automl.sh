@@ -27,13 +27,13 @@ set -o nounset
 #set -o xtrace
 
 . ./common.sh
+PROGNAME=clv-automl
 
 main() {
   local APIS="composer dataflow automl"
   enableAPIs $APIS
 
   PROJECT=$(gcloud config list project --format "value(core.project)")
-  local SCRIPT_NAME=clv-automl
 
   #Get the repo
   rm -rf tensorflow-lifetime-value
