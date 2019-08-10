@@ -42,6 +42,7 @@ main() {
 
   # Create the Service Accounts
   SVC_ACC_NAME=composer2
+  SVC_ACC_ROLES="roles/composer.worker roles/bigquery.dataEditor roles/bigquery.jobUser roles/storage.admin roles/ml.developer roles/dataflow.developer roles/compute.viewer roles/storage.objectAdmin roles/automl.editor"
   createServiceAccount
 
   # Install Miniconda
@@ -68,9 +69,9 @@ main() {
   python clv_automl.py --project_id ${PROJECT} --key_file ${KEY_FILE}
 
   #Remove Service Account Key
-  KEY=$(gcloud iam service-accounts keys list --iam-account composer2@spw-demos.iam.gserviceaccount.com --managed-by user | grep -v KEY | xargs | cut -d " " -f 1)
-  gcloud iam service-accounts keys delete ${KEY} --iam-account composer2@spw-demos.iam.gserviceaccount.com  -q || true
-  gcloud iam service-accounts delete $SVC_ACC_NAME@${PROJECT}.iam.gserviceaccount.com -q || true
+  KEY=$(gcloud iam service-accounts keys list --iam-account $SVC_ACC_NAME@${PROJECT}.iam.gserviceaccount.com --managed-by user | grep -v KEY | xargs | cut -d " " -f 1)
+  gcloud iam service-accounts keys delete ${KEY} --iam-account $SVC_ACC_NAME@${PROJECT}.iam.gserviceaccount.com  -q || true
+  #removeServiceAccount
 }
 
 getData() {
@@ -116,8 +117,11 @@ installMiniConda() {
   then
     wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh
   fi
-  rm -rf ~/miniconda2/
-  bash Miniconda2-latest-Linux-x86_64.sh -b
+
+  if [ ! -d ~/miniconda2/ ]
+  then
+    bash Miniconda2-latest-Linux-x86_64.sh -b
+  fi
   export PATH=~/miniconda2/bin:$PATH
 }
 
@@ -144,6 +148,18 @@ createServiceAccount() {
   do
     echo "Adding role: ${role} to service account $SVC_ACC_NAME"
     gcloud projects add-iam-policy-binding ${PROJECT} --member "serviceAccount:${SVC_ACC_NAME}@${PROJECT}.iam.gserviceaccount.com" --role "${role}" --quiet > /dev/null || true
+  done
+}
+
+removeServiceAccount() {
+  KEY=$(gcloud iam service-accounts keys list --iam-account $SVC_ACC_NAME@${PROJECT}.iam.gserviceaccount.com --managed-by user | grep -v KEY | xargs | cut -d " " -f 1)
+  gcloud iam service-accounts keys delete ${KEY} --iam-account $SVC_ACC_NAME@${PROJECT}.iam.gserviceaccount.com  -q || true
+  gcloud iam service-accounts delete $SVC_ACC_NAME@${PROJECT}.iam.gserviceaccount.com -q || true
+  declare -a roles=(${SVC_ACC_ROLES})
+  for role in "${roles[@]}"
+  do
+    echo "Adding role: ${role} to service account $SVC_ACC_NAME"
+    gcloud projects remove-iam-policy-binding ${PROJECT} --member "serviceAccount:${SVC_ACC_NAME}@${PROJECT}.iam.gserviceaccount.com" --role "${role}" --quiet > /dev/null || true
   done
 }
 
