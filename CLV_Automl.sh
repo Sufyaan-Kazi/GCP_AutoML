@@ -27,7 +27,7 @@ set -o nounset
 #set -o xtrace
 
 . ./common.sh
-PROGNAME=clv-automl
+PROGNAME=$(basename $0)
 
 main() {
   local APIS="composer dataflow automl"
@@ -146,7 +146,7 @@ createServiceAccount() {
   done
 }
 
-trap 'abort' 0
+trap 'abort ${LINENO} "$BASH_COMMAND' 0
 SECONDS=0
 main
 trap : 0

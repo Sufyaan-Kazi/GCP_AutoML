@@ -113,5 +113,8 @@ abort()
   '
   echo "An error occurred. Exiting..." >&2
   echo "${PROGNAME}: ${1:-"Unknown Error"}" 1>&2
+  local lineno=$1
+  local msg=$2
+  echo "Failed at $lineno: $msg"
   exit 1
 }
