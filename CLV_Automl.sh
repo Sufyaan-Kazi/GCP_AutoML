@@ -137,6 +137,7 @@ createCondaEnv() {
 
 createServiceAccount() {
   local EXISTS=$(gcloud iam service-accounts list | grep ${SVC_ACC_NAME}@${PROJECT}.iam.gserviceaccount.com)
+  echo $EXISTS
   if [ ${EXISTS} -eq 0 ]
   then
     # Create the Service Accounts
