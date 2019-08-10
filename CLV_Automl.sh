@@ -48,11 +48,14 @@ main() {
   local DF_ZONE=${REGION}-a
   local SQL_MP_LOCATION="sql"
 
+  #Get the repo
+  rm -rf tensorflow-lifetime-value
+  git clone https://github.com/GoogleCloudPlatform/tensorflow-lifetime-value.git
+  cd tensorflow-lifetime-value
+
   # Copy the raw dataset
   gsutil -m rm -rf ${BUCKET}
   gsutil -m rm -rf ${COMPOSER_BUCKET}
-
-  #Setup & load Data in BigQuery
   gsutil mb -l ${REGION} -p ${PROJECT} ${BUCKET}
   gsutil mb -l ${REGION} -p ${PROJECT} ${COMPOSER_BUCKET}
   gsutil cp gs://solutions-public-assets/ml-clv/db_dump.csv ${BUCKET}
@@ -80,11 +83,6 @@ main() {
     echo "Adding role: ${role} to service account $SVC_ACC_NAME"
     gcloud projects add-iam-policy-binding ${PROJECT} --member "serviceAccount:${SVC_ACC_NAME}@${PROJECT}.iam.gserviceaccount.com" --role "${role}" --quiet > /dev/null || true
   done
-
-  #Get the repo
-  rm -rf tensorflow-lifetime-value
-  git clone https://github.com/GoogleCloudPlatform/tensorflow-lifetime-value.git
-  cd tensorflow-lifetime-value
 
   # Install Miniconda
   sudo apt-get install -y git bzip2
