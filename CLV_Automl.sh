@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/usr/bin/env bash
 # Copyright 2018 Google LLC. This software is provided as-is, without warranty or representation for any use or purpose. Your use of it is subject to your agreements with Google.  
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,93 +20,42 @@
 # Author: Sufyaan Kazi
 # Date: July 2019
 # Purpose: Automate setup of the AutoML Demo for predicting Customer Lifetime Value - https://cloud.google.com/solutions/machine-learning/clv-prediction-with-automl-tables
+set -o errexit
+set -o pipefail
+set -o nounset
+#Debugging
+#set -o xtrace
 
 . ./common.sh
 
 main() {
   local APIS="composer dataflow automl"
-  local PROJECT=$(gcloud config list project --format "value(core.project)")
-  local SCRIPT_NAME=clv-automl
-  local SERVICE_ACC=svcacc-$SVC_ACC_NAME@$PROJECT
-  local KEY_FILE=$SERVICE_ACC.json
-  local ROLES=roles/viewer
-
-  #Enable required GCP apis
   enableAPIs $APIS
-  printf "******\n\n"
 
-  #Setup environment for Airflow
-  local BUCKET=gs://${PROJECT}_data_final
-  local REGION=us-central1
-  local DATASET_NAME=ltv_edu_auto
-  local TABLE_NAME=data_source
-
-  local COMPOSER_NAME="clv-final"
-  local COMPOSER_BUCKET_NAME=${PROJECT}_composer_final
-  local COMPOSER_BUCKET=gs://${COMPOSER_BUCKET_NAME}
-  local DF_STAGING=${COMPOSER_BUCKET}/dataflow_staging
-  local DF_ZONE=${REGION}-a
-  local SQL_MP_LOCATION="sql"
+  PROJECT=$(gcloud config list project --format "value(core.project)")
+  local SCRIPT_NAME=clv-automl
 
   #Get the repo
   rm -rf tensorflow-lifetime-value
   git clone https://github.com/GoogleCloudPlatform/tensorflow-lifetime-value.git
   cd tensorflow-lifetime-value
 
-  # Copy the raw dataset
-  gsutil -m rm -rf ${BUCKET}
-  gsutil -m rm -rf ${COMPOSER_BUCKET}
-  gsutil mb -l ${REGION} -p ${PROJECT} ${BUCKET}
-  gsutil mb -l ${REGION} -p ${PROJECT} ${COMPOSER_BUCKET}
-  gsutil cp gs://solutions-public-assets/ml-clv/db_dump.csv ${BUCKET}
-  gsutil cp ${BUCKET}/db_dump.csv ${COMPOSER_BUCKET}
-  # Copy the data to be predicted
-  gsutil cp clv_automl/to_predict.csv ${BUCKET}/predictions/
-  gsutil cp ${BUCKET}/predictions/to_predict.csv ${COMPOSER_BUCKET}/predictions/
-  bq --location=US rm -rf --dataset ${PROJECT}:${DATASET_NAME}
-  bq --location=US mk --dataset ${PROJECT}:${DATASET_NAME}
-  bq mk -t --schema ../data_source.json ${PROJECT}:${DATASET_NAME}.${TABLE_NAME}
-  bq --location=US load --source_format=CSV ${PROJECT}:${DATASET_NAME}.${TABLE_NAME} ${BUCKET}/db_dump.csv
-  bq query --destination_table ${PROJECT}:${DATASET_NAME}.data_cleaned --use_legacy_sql=false < ../clean.sql
-  bq query --destination_table ${PROJECT}:${DATASET_NAME}.features_n_target --use_legacy_sql=false < ../features_n_target.sql
-
   # Create the Service Accounts
   SVC_ACC_NAME=composer2
-  gcloud iam service-accounts delete $SVC_ACC_NAME@${PROJECT}.iam.gserviceaccount.com -q
-  gcloud iam service-accounts create $SVC_ACC_NAME --display-name $SVC_ACC_NAME --project ${PROJECT}
-
-  echo "*** Adding Role Policy Bindings ***"
-  SVC_ACC_ROLES="roles/composer.worker roles/bigquery.dataEditor roles/bigquery.jobUser roles/storage.admin roles/ml.developer roles/dataflow.developer roles/compute.viewer roles/storage.objectAdmin roles/automl.editor"
-  declare -a roles=(${SVC_ACC_ROLES})
-  for role in "${roles[@]}"
-  do
-    echo "Adding role: ${role} to service account $SVC_ACC_NAME"
-    gcloud projects add-iam-policy-binding ${PROJECT} --member "serviceAccount:${SVC_ACC_NAME}@${PROJECT}.iam.gserviceaccount.com" --role "${role}" --quiet > /dev/null || true
-  done
+  createServiceAccount
 
   # Install Miniconda
-  sudo apt-get install -y git bzip2
-  #if [ ! -f Miniconda2-latest-Linux-x86_64.sh ]
-  #then
-    wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh
-    rm -rf ~/miniconda2/
-    bash Miniconda2-latest-Linux-x86_64.sh -b
-  #fi
-  export PATH=~/miniconda2/bin:$PATH
+  installMiniConda
 
   # Create the Dev Environment
-  EXISTS=$(conda env list | grep clv | wc -l)
-  #if [ $EXISTS -eq 0 ]
-  #then
-    conda create -y -n clv
-    source activate clv
-    conda install -y -n clv python=2.7 pip
-  #fi
-  pip install -r requirements.txt
+  createCondaEnv
+  source activate clv
 
-  # Get the API key
+  # Get into the AutoML folder
   cd clv_automl
   local LOCAL_FOLDER=$(pwd)
+
+  # Get the API key
   KEY_FILE=${LOCAL_FOLDER}/mykey.json
   rm -f $KEY_FILE
   echo "Creating JSON key file $KEY_FILE"
@@ -116,6 +65,85 @@ main() {
 
   #train using AutoML
   python clv_automl.py --project_id ${PROJECT} --key_file ${KEY_FILE}
+
+  #Remove Service Account Key
+  KEY=$(gcloud iam service-accounts keys list --iam-account composer2@spw-demos.iam.gserviceaccount.com --managed-by user | grep -v KEY | xargs | cut -d " " -f 1)
+  gcloud iam service-accounts keys delete ${KEY} --iam-account composer2@spw-demos.iam.gserviceaccount.com  -q
+  #gcloud iam service-accounts delete $SVC_ACC_NAME@${PROJECT}.iam.gserviceaccount.com -q
+}
+
+getData() {
+  local BUCKET=gs://${PROJECT}_data_final
+  local COMPOSER_NAME="clv-final"
+  local COMPOSER_BUCKET_NAME=${PROJECT}_composer_final
+  local COMPOSER_BUCKET=gs://${COMPOSER_BUCKET_NAME}
+  local DF_STAGING=${COMPOSER_BUCKET}/dataflow_staging
+  local DF_ZONE=${REGION}-a
+  local SQL_MP_LOCATION="sql"
+  #Beta v of AutomL Tables needs data to be in US only (Aug 2019)
+  local REGION=us-central1
+  local DATASET_NAME=ltv_edu_auto
+  local TABLE_NAME=data_source
+
+  # Copy the raw dataset
+  gsutil -m rm -rf ${BUCKET}
+  gsutil -m rm -rf ${COMPOSER_BUCKET}
+  gsutil mb -l ${REGION} -p ${PROJECT} ${BUCKET}
+  gsutil mb -l ${REGION} -p ${PROJECT} ${COMPOSER_BUCKET}
+  gsutil cp gs://solutions-public-assets/ml-clv/db_dump.csv ${BUCKET}
+  gsutil cp ${BUCKET}/db_dump.csv ${COMPOSER_BUCKET}
+
+  # Copy the data to be predicted
+  gsutil cp clv_automl/to_predict.csv ${BUCKET}/predictions/
+  gsutil cp ${BUCKET}/predictions/to_predict.csv ${COMPOSER_BUCKET}/predictions/
+
+  #Create bq dataset
+  bq --location=US rm -rf --dataset ${PROJECT}:${DATASET_NAME}
+  bq --location=US mk --dataset ${PROJECT}:${DATASET_NAME}
+  bq mk -t --schema ../data_source.json ${PROJECT}:${DATASET_NAME}.${TABLE_NAME}
+  echo "Loading raw dataset"
+  bq --location=US load --source_format=CSV ${PROJECT}:${DATASET_NAME}.${TABLE_NAME} ${BUCKET}/db_dump.csv
+  echo "Creating clean form of data"
+  bq query --destination_table ${PROJECT}:${DATASET_NAME}.data_cleaned --use_legacy_sql=false < ../clean.sql
+  echo "Creating features and targets"
+  bq query --destination_table ${PROJECT}:${DATASET_NAME}.features_n_target --use_legacy_sql=false < ../features_n_target.sql
+}
+
+installMiniConda() {
+  sudo apt-get install -y git bzip2
+  if [ ! -f Miniconda2-latest-Linux-x86_64.sh ]
+  then
+    wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh
+  fi
+  rm -rf ~/miniconda2/
+  bash Miniconda2-latest-Linux-x86_64.sh -b
+  export PATH=~/miniconda2/bin:$PATH
+}
+
+createCondaEnv() {
+  # Create the Dev Environment
+  EXISTS=$(conda env list | grep clv | wc -l)
+  #if [ $EXISTS -eq 0 ]
+  #then
+    conda create -y -n clv
+    source activate clv
+    conda install -y -n clv python=2.7 pip
+  #fi
+  pip install -r requirements.txt
+}
+
+createServiceAccount() {
+  # Create the Service Accounts
+  gcloud iam service-accounts delete $SVC_ACC_NAME@${PROJECT}.iam.gserviceaccount.com -q
+  gcloud iam service-accounts create $SVC_ACC_NAME --display-name $SVC_ACC_NAME --project ${PROJECT}
+  echo "*** Adding Role Policy Bindings ***"
+  local SVC_ACC_ROLES="roles/composer.worker roles/bigquery.dataEditor roles/bigquery.jobUser roles/storage.admin roles/ml.developer roles/dataflow.developer roles/compute.viewer roles/storage.objectAdmin roles/automl.editor"
+  declare -a roles=(${SVC_ACC_ROLES})
+  for role in "${roles[@]}"
+  do
+    echo "Adding role: ${role} to service account $SVC_ACC_NAME"
+    gcloud projects add-iam-policy-binding ${PROJECT} --member "serviceAccount:${SVC_ACC_NAME}@${PROJECT}.iam.gserviceaccount.com" --role "${role}" --quiet > /dev/null || true
+  done
 }
 
 main
