@@ -69,9 +69,7 @@ main() {
   python clv_automl.py --project_id ${PROJECT} --key_file ${KEY_FILE}
 
   #Remove Service Account Key
-  KEY=$(gcloud iam service-accounts keys list --iam-account $SVC_ACC_NAME@${PROJECT}.iam.gserviceaccount.com --managed-by user | grep -v KEY | xargs | cut -d " " -f 1)
-  gcloud iam service-accounts keys delete ${KEY} --iam-account $SVC_ACC_NAME@${PROJECT}.iam.gserviceaccount.com  -q || true
-  #removeServiceAccount
+  removeServiceAccount
 }
 
 getData() {
@@ -127,14 +125,13 @@ installMiniConda() {
 
 createCondaEnv() {
   # Create the Dev Environment
-  #EXISTS=$(conda env list | grep clv | wc -l)
-  #if [ $EXISTS -eq 0 ]
-  #then
-  conda env list
-  conda create -y -n clv
+  EXISTS=$(conda env list | grep clv | wc -l)
+  if [ $EXISTS -eq 0 ]
+  then
+    conda create -y -n clv
+    conda install -y -n clv python=2.7 pip
+  fi
   source activate clv
-  conda install -y -n clv python=2.7 pip
-  #fi
   pip install -r requirements.txt
 }
 
@@ -142,7 +139,6 @@ createServiceAccount() {
   # Create the Service Accounts
   gcloud iam service-accounts create $SVC_ACC_NAME --display-name $SVC_ACC_NAME --project ${PROJECT}
   echo "*** Adding Role Policy Bindings ***"
-  local SVC_ACC_ROLES="roles/composer.worker roles/bigquery.dataEditor roles/bigquery.jobUser roles/storage.admin roles/ml.developer roles/dataflow.developer roles/compute.viewer roles/storage.objectAdmin roles/automl.editor"
   declare -a roles=(${SVC_ACC_ROLES})
   for role in "${roles[@]}"
   do
@@ -158,7 +154,7 @@ removeServiceAccount() {
   declare -a roles=(${SVC_ACC_ROLES})
   for role in "${roles[@]}"
   do
-    echo "Adding role: ${role} to service account $SVC_ACC_NAME"
+    echo "Removing role: ${role} to service account $SVC_ACC_NAME from $PROJECT"
     gcloud projects remove-iam-policy-binding ${PROJECT} --member "serviceAccount:${SVC_ACC_NAME}@${PROJECT}.iam.gserviceaccount.com" --role "${role}" --quiet > /dev/null || true
   done
 }
@@ -167,4 +163,4 @@ trap 'abort ${LINENO} "$BASH_COMMAND' 0
 SECONDS=0
 main
 trap : 0
-printf "\nScrpt complete in ${SECONDS} seconds.\n"
+printf "\n$PROGNAME complete in ${SECONDS} seconds.\n"
