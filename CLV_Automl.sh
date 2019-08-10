@@ -49,7 +49,7 @@ main() {
 
   # Create the Dev Environment
   createCondaEnv
-  source activate clv
+  #source activate clv
 
   # Get into the AutoML folder
   cd clv_automl
