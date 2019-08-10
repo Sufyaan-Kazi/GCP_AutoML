@@ -120,6 +120,7 @@ main() {
   bq --location=US mk --dataset ${PROJECT}:${DATASET_NAME}
   bq mk -t --schema ../data_source.json ${PROJECT}:${DATASET_NAME}.${TABLE_NAME}
   bq --location=US load --source_format=CSV ${PROJECT}:${DATASET_NAME}.${TABLE_NAME} ${BUCKET}/db_dump.csv
+  bq query --destination_table spw-demos:ltv.data_cleaned5 --use_legacy_sql=false --quiet < clean.sql
 
   #train using AutoML
   cp $KEY_FILE ${LOCAL_FOLDER}/clv_automl
