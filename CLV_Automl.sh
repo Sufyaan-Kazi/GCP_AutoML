@@ -123,12 +123,13 @@ installMiniConda() {
 
 createCondaEnv() {
   # Create the Dev Environment
-  EXISTS=$(conda env list | grep clv | wc -l)
+  #EXISTS=$(conda env list | grep clv | wc -l)
   #if [ $EXISTS -eq 0 ]
   #then
-    conda create -y -n clv
-    source activate clv
-    conda install -y -n clv python=2.7 pip
+  conda env list
+  conda create -y -n clv
+  source activate clv
+  conda install -y -n clv python=2.7 pip
   #fi
   pip install -r requirements.txt
 }
