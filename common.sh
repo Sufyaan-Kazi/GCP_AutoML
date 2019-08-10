@@ -100,3 +100,18 @@ createServiceAccount() {
   echo ${GOOGLE_APPLICATION_CREDENTIALS}
   echo GOOGLE_APPLICATION_CREDENTIAL=${GOOGLE_APPLICATION_CREDENTIALS}
 }
+
+#
+# Handle an error in the script
+#
+abort()
+{
+  echo >&2 '
+  ***************
+  *** ABORTED ***
+  ***************
+  '
+  echo "An error occurred. Exiting..." >&2
+  echo "${PROGNAME}: ${1:-"Unknown Error"}" 1>&2
+  exit 1
+}

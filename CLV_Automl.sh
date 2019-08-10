@@ -146,4 +146,8 @@ createServiceAccount() {
   done
 }
 
+trap 'abort' 0
+SECONDS=0
 main
+trap : 0
+printf "\nScrpt complete in ${SECONDS} seconds.\n"
