@@ -65,7 +65,7 @@ main() {
   #Setup environment for Airflow
   local BUCKET=gs://${PROJECT}_data_final
   local REGION=us-central1
-  local DATASET_NAME=ltv
+  local DATASET_NAME=ltv_edu_auto
   local TABLE_NAME=data_source
 
   local COMPOSER_NAME="clv-final"
@@ -120,7 +120,8 @@ main() {
   bq --location=US mk --dataset ${PROJECT}:${DATASET_NAME}
   bq mk -t --schema ../data_source.json ${PROJECT}:${DATASET_NAME}.${TABLE_NAME}
   bq --location=US load --source_format=CSV ${PROJECT}:${DATASET_NAME}.${TABLE_NAME} ${BUCKET}/db_dump.csv
-  bq query --destination_table spw-demos:ltv.data_cleaned5 --use_legacy_sql=false --quiet < ../clean.sql
+  bq query --destination_table ${PROJECT}:${DATASET_NAME}.data_cleaned --use_legacy_sql=false --quiet < ../clean.sql
+  bq query --destination_table ${PROJECT}:${DATASET_NAME}.features_n_target --use_legacy_sql=false --quiet < ../features_n_target.sql
 
   #train using AutoML
   cp $KEY_FILE ${LOCAL_FOLDER}/clv_automl

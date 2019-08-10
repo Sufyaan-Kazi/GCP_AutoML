@@ -14,12 +14,12 @@ FROM
       SELECT
         MAX(PARSE_DATE("%m/%d/%y", SUBSTR(InvoiceDate, 0, 8)))
       FROM
-        `spw-demos.ltv.data_source` tl
+        `spw-demos.ltv_edu_auto.data_source` tl
       WHERE
         tl.CustomerID = t.CustomerID
     ) latest_order
   FROM
-    `spw-demos.ltv.data_source` t
+    `spw-demos.ltv_edu_auto.data_source` t
   GROUP BY
       CustomerID,
       order_date
@@ -41,7 +41,7 @@ INNER JOIN (
             ELSE 0
           END ) positive_value
       FROM
-        `spw-demos.ltv.data_source`
+        `spw-demos.ltv_edu_auto.data_source`
       WHERE
         PARSE_DATE("%m/%d/%y", SUBSTR(InvoiceDate, 0, 8)) < DATE('2011-08-08')
       GROUP BY
