@@ -27,11 +27,12 @@ set -o nounset
 #set -o xtrace
 
 . ./common.sh
-PROGNAME=$(basename $0)
+# shellcheck disable=SC2086
+PROGNAME=$(basename ${0})
 
 main() {
   local APIS="composer dataflow automl"
-  enableAPIs $APIS
+  enableAPIs "${APIS}"
 
   PROJECT=$(gcloud config list project --format "value(core.project)")
   COMPOSER_BUCKET_NAME=${PROJECT}_composer_final
@@ -47,7 +48,8 @@ main() {
   # Create the Service Accounts
   SVC_ACC_NAME=svcacc-clv-automl
   SVC_ACC_ROLES="roles/composer.worker roles/bigquery.dataEditor roles/bigquery.jobUser roles/storage.admin roles/ml.developer roles/dataflow.developer roles/compute.viewer roles/storage.objectAdmin roles/automl.editor"
-  createServiceAccount
+# shellcheck disable=SC2086
+  createServiceAccount $0
 
   # Install Miniconda
   installMiniConda
@@ -57,16 +59,20 @@ main() {
 
   # Get into the AutoML folder
   cd clv_automl
-  local LOCAL_FOLDER=$(pwd)
+  local LOCAL_FOLDER
+  LOCAL_FOLDER=$(pwd)
 
   # Get the API key
+# shellcheck disable=SC2086
   KEY_FILE=${LOCAL_FOLDER}/mykey.json
   rm -f $KEY_FILE
   echo "Creating JSON key file $KEY_FILE"
+# shellcheck disable=SC2086
   gcloud iam service-accounts keys create $KEY_FILE --iam-account ${SVC_ACC_NAME}@${PROJECT}.iam.gserviceaccount.com
   export GOOGLE_APPLICATION_CREDENTIALS=${KEY_FILE}
 
   #train using AutoML
+# shellcheck disable=SC2086
   python clv_automl.py --project_id ${PROJECT} --key_file ${KEY_FILE} --batch_gcs_input ${COMPOSER_BUCKET}/predictions/to_predict.csv --batch_gcs_output ${COMPOSER_BUCKET}/predictions/output
 
   #Remove Service Account Key
@@ -75,9 +81,9 @@ main() {
 
 getData() {
   local BUCKET=gs://${PROJECT}_data_final
-  local DF_STAGING=${COMPOSER_BUCKET}/dataflow_staging
-  local DF_ZONE=${REGION}-a
-  local SQL_MP_LOCATION="sql"
+  #local DF_STAGING=${COMPOSER_BUCKET}/dataflow_staging
+  #local DF_ZONE=${REGION}-a
+  #local SQL_MP_LOCATION="sql"
   #Beta v of AutomL Tables needs data to be in US only (Aug 2019)
   local REGION=us-central1
   local DATASET_NAME=ltv_edu_auto
@@ -123,18 +129,21 @@ installMiniConda() {
 
 createCondaEnv() {
   # Create the Dev Environment
-  local EXISTS=$(conda env list | grep clv | wc -l)
+  local EXISTS
+  EXISTS=$(conda env list | grep -c clv )
   if [ ${EXISTS} -eq 0 ]
   then
     conda create -y -n clv
     conda install -y -n clv python=2.7 pip
   fi
+  # shellcheck disable=SC1091
   source activate clv
   pip install -r requirements.txt
 }
 
 createServiceAccount() {
-  local EXISTS=$(gcloud iam service-accounts list | grep ${SVC_ACC_NAME}@${PROJECT}.iam.gserviceaccount.com | wc -l)
+  local EXISTS
+  EXISTS=$(gcloud iam service-accounts list | grep -c ${SVC_ACC_NAME}@${PROJECT}.iam.gserviceaccount.com )
   echo $EXISTS
   if [ ${EXISTS} -ne 0 ]
   then
@@ -156,6 +165,7 @@ createServiceAccount() {
 removeServiceAccount() {
   KEY=$(gcloud iam service-accounts keys list --iam-account $SVC_ACC_NAME@${PROJECT}.iam.gserviceaccount.com --managed-by user | grep -v KEY | xargs | cut -d " " -f 1)A
   if [ ! -z ${KEY} ]
+  then
     gcloud iam service-accounts keys delete ${KEY} --iam-account $SVC_ACC_NAME@${PROJECT}.iam.gserviceaccount.com  -q || true
   fi
 
@@ -172,4 +182,4 @@ trap 'abort ${LINENO} "$BASH_COMMAND' 0
 SECONDS=0
 main
 trap : 0
-printf "\n$PROGNAME complete in ${SECONDS} seconds.\n"
+printf "\n$PROGNAME complete in %s seconds.\n" "${SECONDS}"
