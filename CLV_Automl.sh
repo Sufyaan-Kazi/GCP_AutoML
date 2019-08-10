@@ -24,7 +24,7 @@ set -o errexit
 set -o pipefail
 set -o nounset
 #Debugging
-#set -o xtrace
+set -o xtrace
 
 . ./common.sh
 PROGNAME=$(basename $0)
