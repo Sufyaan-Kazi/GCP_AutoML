@@ -36,8 +36,10 @@ main() {
   PROJECT=$(gcloud config list project --format "value(core.project)")
 
   #Get the repo
-  rm -rf tensorflow-lifetime-value
-  git clone https://github.com/GoogleCloudPlatform/tensorflow-lifetime-value.git
+  if [ ! -d tensorflow-lifetime-value ]
+  then
+    git clone https://github.com/GoogleCloudPlatform/tensorflow-lifetime-value.git
+  fi
   cd tensorflow-lifetime-value
 
   # Create the Service Accounts
@@ -50,10 +52,8 @@ main() {
 
   # Create the Dev Environment
   createCondaEnv
-  #source activate clv
 
   # Get into the AutoML folder
-  pwd
   cd clv_automl
   local LOCAL_FOLDER=$(pwd)
 
