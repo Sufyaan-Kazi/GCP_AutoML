@@ -69,8 +69,8 @@ main() {
 
   #Remove Service Account Key
   KEY=$(gcloud iam service-accounts keys list --iam-account composer2@spw-demos.iam.gserviceaccount.com --managed-by user | grep -v KEY | xargs | cut -d " " -f 1)
-  gcloud iam service-accounts keys delete ${KEY} --iam-account composer2@spw-demos.iam.gserviceaccount.com  -q
-  #gcloud iam service-accounts delete $SVC_ACC_NAME@${PROJECT}.iam.gserviceaccount.com -q
+  gcloud iam service-accounts keys delete ${KEY} --iam-account composer2@spw-demos.iam.gserviceaccount.com  -q || true
+  gcloud iam service-accounts delete $SVC_ACC_NAME@${PROJECT}.iam.gserviceaccount.com -q || true
 }
 
 getData() {
@@ -136,7 +136,6 @@ createCondaEnv() {
 
 createServiceAccount() {
   # Create the Service Accounts
-  gcloud iam service-accounts delete $SVC_ACC_NAME@${PROJECT}.iam.gserviceaccount.com -q
   gcloud iam service-accounts create $SVC_ACC_NAME --display-name $SVC_ACC_NAME --project ${PROJECT}
   echo "*** Adding Role Policy Bindings ***"
   local SVC_ACC_ROLES="roles/composer.worker roles/bigquery.dataEditor roles/bigquery.jobUser roles/storage.admin roles/ml.developer roles/dataflow.developer roles/compute.viewer roles/storage.objectAdmin roles/automl.editor"
