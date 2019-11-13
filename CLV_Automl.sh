@@ -46,6 +46,7 @@ main() {
     git clone https://github.com/GoogleCloudPlatform/tensorflow-lifetime-value.git
   fi
   cd tensorflow-lifetime-value
+  git pull
 
   # Create the Service Accounts
   SVC_ACC_NAME=svcacc-clv-automl

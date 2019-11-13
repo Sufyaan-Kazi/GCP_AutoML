@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 #sudo apt-get install -y shellcheck
 
-clear
 shellcheck -x -e SC2086,SC2126 CLV_Automl.sh
 
 if [ $? -eq 0 ]
