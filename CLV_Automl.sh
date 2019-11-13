@@ -145,10 +145,8 @@ createCondaEnv() {
 
 createServiceAccount() {
   local EXISTS
-  gcloud iam service-accounts list
-  echo ${SVC_ACC_NAME}@${PROJECT}.iam.gserviceaccount.com
   EXISTS=$(gcloud iam service-accounts list | grep "${SVC_ACC_NAME}@${PROJECT}.iam.gserviceaccount.com"  | wc -l)
-  if [ "$?" -ne 0 ]
+  if [ $EXISTS -ne 0 ]
   then
     # GCE Enforcer now renders previous one useless :(
     removeServiceAccount
