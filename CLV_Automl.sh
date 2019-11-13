@@ -20,9 +20,11 @@
 # Author: Sufyaan Kazi
 # Date: July 2019
 # Purpose: Automate setup of the AutoML Demo for predicting Customer Lifetime Value - https://cloud.google.com/solutions/machine-learning/clv-prediction-with-automl-tables
-set -o errexit
-set -o pipefail
-set -o nounset
+#set -o errexit
+#set -o pipefail
+#set -o nounset
+
+set -eE -o functrace
 #Debugging
 #set -o xtrace
 
@@ -65,7 +67,7 @@ main() {
   # Get the API key
 # shellcheck disable=SC2086
   KEY_FILE=${LOCAL_FOLDER}/mykey.json
-  rm -f $KEY_FILE
+  rm -f "${KEY_FILE}"
   echo "Creating JSON key file $KEY_FILE"
 # shellcheck disable=SC2086
   gcloud iam service-accounts keys create $KEY_FILE --iam-account ${SVC_ACC_NAME}@${PROJECT}.iam.gserviceaccount.com
@@ -90,23 +92,23 @@ getData() {
   local TABLE_NAME=data_source
 
   # Copy the raw dataset
-  gsutil -m rm -rf ${BUCKET}
-  gsutil -m rm -rf ${COMPOSER_BUCKET}
-  gsutil mb -l ${REGION} -p ${PROJECT} ${BUCKET}
-  gsutil mb -l ${REGION} -p ${PROJECT} ${COMPOSER_BUCKET}
-  gsutil cp gs://solutions-public-assets/ml-clv/db_dump.csv ${BUCKET}
-  gsutil cp ${BUCKET}/db_dump.csv ${COMPOSER_BUCKET}
+  gsutil -m rm -rf "${BUCKET}"
+  gsutil -m rm -rf "${COMPOSER_BUCKET}"
+  gsutil mb -l "${REGION}" -p "${PROJECT} ${BUCKET}"
+  gsutil mb -l "${REGION}" -p "${PROJECT} ${COMPOSER_BUCKET}"
+  gsutil cp gs://solutions-public-assets/ml-clv/db_dump.csv "${BUCKET}"
+  gsutil cp "${BUCKET}"/db_dump.csv "${COMPOSER_BUCKET}"
 
   # Copy the data to be predicted
-  gsutil cp clv_automl/to_predict.csv ${BUCKET}/predictions/
-  gsutil cp ${BUCKET}/predictions/to_predict.csv ${COMPOSER_BUCKET}/predictions/
+  gsutil cp clv_automl/to_predict.csv "${BUCKET}/predictions/"
+  gsutil cp "${BUCKET}/predictions/to_predict.csv" "${COMPOSER_BUCKET}"/predictions/
 
   #Create bq dataset
-  bq --location=US rm -rf --dataset ${PROJECT}:${DATASET_NAME}
-  bq --location=US mk --dataset ${PROJECT}:${DATASET_NAME}
-  bq mk -t --schema ../data_source.json ${PROJECT}:${DATASET_NAME}.${TABLE_NAME}
+  bq --location=US rm -rf --dataset "${PROJECT}:${DATASET_NAME}"
+  bq --location=US mk --dataset "${PROJECT}:${DATASET_NAME}"
+  bq mk -t --schema ../data_source.json "${PROJECT}:${DATASET_NAME}.${TABLE_NAME}"
   echo "Loading raw dataset"
-  bq --location=US load --source_format=CSV ${PROJECT}:${DATASET_NAME}.${TABLE_NAME} ${BUCKET}/db_dump.csv
+  bq --location=US load --source_format=CSV "${PROJECT}:${DATASET_NAME}.${TABLE_NAME}" "${BUCKET}/db_dump.csv"
   echo "Creating clean form of data"
   bq query --destination_table ${PROJECT}:${DATASET_NAME}.data_cleaned --use_legacy_sql=false < ../clean.sql
   echo "Creating features and targets"
@@ -143,9 +145,10 @@ createCondaEnv() {
 
 createServiceAccount() {
   local EXISTS
-  EXISTS=$(gcloud iam service-accounts list | grep -c ${SVC_ACC_NAME}@${PROJECT}.iam.gserviceaccount.com )
-  echo $EXISTS
-  if [ ${EXISTS} -ne 0 ]
+  gcloud iam service-accounts list
+  echo ${SVC_ACC_NAME}@${PROJECT}.iam.gserviceaccount.com
+  EXISTS=$(gcloud iam service-accounts list | grep "${SVC_ACC_NAME}@${PROJECT}.iam.gserviceaccount.com"  | wc -l)
+  if [ "$?" -ne 0 ]
   then
     # GCE Enforcer now renders previous one useless :(
     removeServiceAccount
@@ -163,7 +166,8 @@ createServiceAccount() {
 }
 
 removeServiceAccount() {
-  KEY=$(gcloud iam service-accounts keys list --iam-account $SVC_ACC_NAME@${PROJECT}.iam.gserviceaccount.com --managed-by user | grep -v KEY | xargs | cut -d " " -f 1)A
+  echo "Removing Service Account"
+  KEY=$(gcloud iam service-accounts keys list --iam-account $SVC_ACC_NAME@${PROJECT}.iam.gserviceaccount.com --managed-by user | grep -v KEY | xargs | cut -d " " -f 1)
   if [ ! -z ${KEY} ]
   then
     gcloud iam service-accounts keys delete ${KEY} --iam-account $SVC_ACC_NAME@${PROJECT}.iam.gserviceaccount.com  -q || true
@@ -178,8 +182,7 @@ removeServiceAccount() {
   done
 }
 
-trap 'abort ${LINENO} "$BASH_COMMAND' 0
+trap 'abort ${LINENO} "$BASH_COMMAND' ERR
 SECONDS=0
 main
-trap : 0
 printf "\n$PROGNAME complete in %s seconds.\n" "${SECONDS}"
