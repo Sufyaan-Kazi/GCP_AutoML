@@ -20,11 +20,13 @@
 # Author: Sufyaan Kazi
 # Date: July 2019
 # Purpose: Automate setup of the AutoML Demo for predicting Customer Lifetime Value - https://cloud.google.com/solutions/machine-learning/clv-prediction-with-automl-tables
+set -Eeuo pipefail
+
 #set -o errexit
 #set -o pipefail
 #set -o nounset
 
-set -e -o functrace
+#set -e -o functrace
 #Debugging
 #set -o xtrace
 
@@ -91,8 +93,8 @@ getData() {
   local TABLE_NAME=data_source
 
   # Copy the raw dataset
-  #gsutil rm -rf ${BUCKET}
-  #gsutil rm -rf ${COMPOSER_BUCKET}
+  gsutil rm -rf ${BUCKET}
+  gsutil rm -rf ${COMPOSER_BUCKET}
   gsutil mb -l ${REGION} -p ${PROJECT} ${BUCKET}
   gsutil mb -l ${REGION} -p ${PROJECT} ${COMPOSER_BUCKET}
   gsutil cp gs://solutions-public-assets/ml-clv/db_dump.csv ${BUCKET}
