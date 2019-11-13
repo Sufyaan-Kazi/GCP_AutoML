@@ -24,7 +24,7 @@
 #set -o pipefail
 #set -o nounset
 
-set -eE -o functrace
+set -e -o functrace
 #Debugging
 #set -o xtrace
 
@@ -51,7 +51,6 @@ main() {
   # Create the Service Accounts
   SVC_ACC_NAME=svcacc-clv-automl
   SVC_ACC_ROLES="roles/composer.worker roles/bigquery.dataEditor roles/bigquery.jobUser roles/storage.admin roles/ml.developer roles/dataflow.developer roles/compute.viewer roles/storage.objectAdmin roles/automl.editor"
-# shellcheck disable=SC2086
   createServiceAccount $0
 
   # Install Miniconda
@@ -66,16 +65,15 @@ main() {
   LOCAL_FOLDER=$(pwd)
 
   # Get the API key
-# shellcheck disable=SC2086
   KEY_FILE=${LOCAL_FOLDER}/mykey.json
   rm -f "${KEY_FILE}"
   echo "Creating JSON key file $KEY_FILE"
-# shellcheck disable=SC2086
   gcloud iam service-accounts keys create $KEY_FILE --iam-account ${SVC_ACC_NAME}@${PROJECT}.iam.gserviceaccount.com
   export GOOGLE_APPLICATION_CREDENTIALS=${KEY_FILE}
 
+  getData
+
   #train using AutoML
-# shellcheck disable=SC2086
   python clv_automl.py --project_id ${PROJECT} --key_file ${KEY_FILE} --batch_gcs_input ${COMPOSER_BUCKET}/predictions/to_predict.csv --batch_gcs_output ${COMPOSER_BUCKET}/predictions/output
 
   #Remove Service Account Key
@@ -93,23 +91,23 @@ getData() {
   local TABLE_NAME=data_source
 
   # Copy the raw dataset
-  gsutil -m rm -rf "${BUCKET}"
-  gsutil -m rm -rf "${COMPOSER_BUCKET}"
-  gsutil mb -l "${REGION}" -p "${PROJECT} ${BUCKET}"
-  gsutil mb -l "${REGION}" -p "${PROJECT} ${COMPOSER_BUCKET}"
-  gsutil cp gs://solutions-public-assets/ml-clv/db_dump.csv "${BUCKET}"
-  gsutil cp "${BUCKET}"/db_dump.csv "${COMPOSER_BUCKET}"
+  #gsutil rm -rf ${BUCKET}
+  #gsutil rm -rf ${COMPOSER_BUCKET}
+  gsutil mb -l ${REGION} -p ${PROJECT} ${BUCKET}
+  gsutil mb -l ${REGION} -p ${PROJECT} ${COMPOSER_BUCKET}
+  gsutil cp gs://solutions-public-assets/ml-clv/db_dump.csv ${BUCKET}
+  gsutil cp ${BUCKET}/db_dump.csv ${COMPOSER_BUCKET}
 
   # Copy the data to be predicted
-  gsutil cp clv_automl/to_predict.csv "${BUCKET}/predictions/"
-  gsutil cp "${BUCKET}/predictions/to_predict.csv" "${COMPOSER_BUCKET}"/predictions/
+  gsutil cp clv_automl/to_predict.csv ${BUCKET}/predictions/
+  gsutil cp ${BUCKET}/predictions/to_predict.csv ${COMPOSER_BUCKET}/predictions/
 
   #Create bq dataset
-  bq --location=US rm -rf --dataset "${PROJECT}:${DATASET_NAME}"
-  bq --location=US mk --dataset "${PROJECT}:${DATASET_NAME}"
-  bq mk -t --schema ../data_source.json "${PROJECT}:${DATASET_NAME}.${TABLE_NAME}"
+  bq --location=US rm -rf --dataset ${PROJECT}:${DATASET_NAME}
+  bq --location=US mk --dataset ${PROJECT}:${DATASET_NAME}
+  bq mk -t --schema ../data_source.json ${PROJECT}:${DATASET_NAME}.${TABLE_NAME}
   echo "Loading raw dataset"
-  bq --location=US load --source_format=CSV "${PROJECT}:${DATASET_NAME}.${TABLE_NAME}" "${BUCKET}/db_dump.csv"
+  bq --location=US load --source_format=CSV ${PROJECT}:${DATASET_NAME}.${TABLE_NAME} ${BUCKET}/db_dump.csv
   echo "Creating clean form of data"
   bq query --destination_table ${PROJECT}:${DATASET_NAME}.data_cleaned --use_legacy_sql=false < ../clean.sql
   echo "Creating features and targets"
@@ -133,7 +131,7 @@ installMiniConda() {
 createCondaEnv() {
   # Create the Dev Environment
   local EXISTS
-  EXISTS=$(conda env list | grep -c clv )
+  EXISTS=$(conda env list | grep clv | wc -l)
   if [ ${EXISTS} -eq 0 ]
   then
     conda create -y -n clv
